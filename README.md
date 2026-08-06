@@ -247,6 +247,21 @@ tests/
   evaluation/
 ```
 
+## Relational Schema
+
+PostgreSQL stores normalized investigation evidence across these tables:
+
+- `customers` - customer demographics, contact details, and account creation date.
+- `policies` - policy type, status, coverage, premiums, deductibles, and effective dates.
+- `vehicles` - insured vehicles, estimated values, and registration regions.
+- `repair_shops` - repair shops, owners, locations, and bank-account references.
+- `incidents` - incident type, date, city, address, weather, police report, and witness count.
+- `claims` - claim amounts, dates, statuses, descriptions, historical outcomes, and `claim_embedding VECTOR(128)`.
+- `claim_participants` - drivers, witnesses, passengers, third parties, and other linked people or organizations.
+- `payments` - claim payments, recipients, bank-account references, amounts, dates, and statuses.
+
+The schema includes foreign keys from claims to policies, vehicles, incidents, and repair shops, plus cascading detail records for participants and payments. Indexes support common investigative lookups by date, amount, status, fraud outcome metadata, repair shop, bank account, contact information, and pgvector cosine similarity.
+
 ## Data Generation Policy
 
 The repository does not contain the full synthetic dataset, PostgreSQL database files, model checkpoints, adapter weights, claim vectors, W&B logs, or generated evaluation outputs.
