@@ -108,10 +108,9 @@ class FalconSQLTrainer:
         eval_dataset: Any | None,
     ) -> Any:
         """Build a TRL SFTTrainer for text-to-SQL instruction tuning."""
-        from transformers import TrainingArguments
-        from trl import SFTTrainer
+        from trl import SFTConfig, SFTTrainer
 
-        args = TrainingArguments(
+        args = SFTConfig(
             output_dir=str(self.training_config.output_dir),
             num_train_epochs=self.training_config.num_train_epochs,
             per_device_train_batch_size=self.training_config.per_device_train_batch_size,
@@ -128,15 +127,16 @@ class FalconSQLTrainer:
             bf16=self.training_config.bf16,
             gradient_checkpointing=self.training_config.gradient_checkpointing,
             report_to=list(self.training_config.report_to),
-            evaluation_strategy="steps" if eval_dataset is not None else "no",
+            eval_strategy="steps" if eval_dataset is not None else "no",
+            dataset_text_field="text",
+            max_length=self.training_config.max_seq_length,
+            packing=False,
         )
         return SFTTrainer(
             model=model,
-            tokenizer=tokenizer,
+            processing_class=tokenizer,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            dataset_text_field="text",
-            max_seq_length=self.training_config.max_seq_length,
             args=args,
         )
 
@@ -146,7 +146,20 @@ class FalconSQLTrainer:
             "base_model_id": FALCON_SQL_BASE_MODEL_ID,
             "train_jsonl_path": str(train_path),
             "eval_jsonl_path": str(eval_path),
-            "training": asdict(self.training_config),
-            "lora": asdict(self.lora_config),
-            "quantization": asdict(self.quantization_config),
+            "training": _json_safe(asdict(self.training_config)),
+            "lora": _json_safe(asdict(self.lora_config)),
+            "quantization": _json_safe(asdict(self.quantization_config)),
         }
+
+
+def _json_safe(value: Any) -> Any:
+    """Convert paths and tuples in nested config values into JSON-friendly data."""
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, tuple):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    return value
