@@ -1,0 +1,200 @@
+{
+  "claim_participants": [
+    {
+      "address": "14 Northgate Road",
+      "claim_id": "CLM-00001",
+      "email": "maya.patel@example.com",
+      "full_name": "Maya Patel",
+      "participant_id": "PAR-000001",
+      "participant_type": "claimant",
+      "phone_number": "+447700900101",
+      "relationship_to_claim": "policy_holder"
+    },
+    {
+      "address": "22 Market Street",
+      "claim_id": "CLM-00002",
+      "email": "rohan.shah@example.com",
+      "full_name": "Rohan Shah",
+      "participant_id": "PAR-000002",
+      "participant_type": "claimant",
+      "phone_number": "+447700900202",
+      "relationship_to_claim": "policy_holder"
+    }
+  ],
+  "claims": [
+    {
+      "claim_amount": 28000,
+      "claim_date": "2025-02-03",
+      "claim_description": "Vehicle-theft claim filed shortly after policy creation.",
+      "claim_embedding": null,
+      "claim_id": "CLM-00001",
+      "claim_status": "under_review",
+      "damage_type": "total_loss",
+      "historical_fraud_label": true,
+      "incident_id": "INC-00001",
+      "injury_reported": false,
+      "investigation_outcome": "confirmed_fraud",
+      "police_report_available": true,
+      "policy_id": "POL-00001",
+      "repair_cost": 21000,
+      "repair_shop_id": "RS-0001",
+      "vehicle_id": "VEH-00001"
+    },
+    {
+      "claim_amount": 16500,
+      "claim_date": "2025-05-14",
+      "claim_description": "Collision claim linked to a repair shop used by another claim.",
+      "claim_embedding": null,
+      "claim_id": "CLM-00002",
+      "claim_status": "paid",
+      "damage_type": "front_end",
+      "historical_fraud_label": false,
+      "incident_id": "INC-00002",
+      "injury_reported": true,
+      "investigation_outcome": "not_fraud",
+      "police_report_available": true,
+      "policy_id": "POL-00002",
+      "repair_cost": 12000,
+      "repair_shop_id": "RS-0001",
+      "vehicle_id": "VEH-00002"
+    }
+  ],
+  "customers": [
+    {
+      "account_created_at": "2023-02-01T09:00:00Z",
+      "address": "14 Northgate Road",
+      "annual_income": 72000,
+      "city": "London",
+      "customer_id": "CUS-00001",
+      "date_of_birth": "1987-04-12",
+      "email": "maya.patel@example.com",
+      "full_name": "Maya Patel",
+      "occupation": "Consultant",
+      "phone_number": "+447700900101",
+      "postcode": "LDN 01AA"
+    },
+    {
+      "account_created_at": "2023-03-15T09:00:00Z",
+      "address": "22 Market Street",
+      "annual_income": 41000,
+      "city": "London",
+      "customer_id": "CUS-00002",
+      "date_of_birth": "1979-09-03",
+      "email": "rohan.shah@example.com",
+      "full_name": "Rohan Shah",
+      "occupation": "Driver",
+      "phone_number": "+447700900202",
+      "postcode": "LDN 02AA"
+    }
+  ],
+  "incidents": [
+    {
+      "incident_address": "Unit 1, Dockside Estate",
+      "incident_city": "London",
+      "incident_date": "2025-01-29",
+      "incident_id": "INC-00001",
+      "incident_type": "vehicle_theft",
+      "police_report_reference": "POLICE-000001",
+      "weather_condition": "rain",
+      "witness_count": 1
+    },
+    {
+      "incident_address": "45 High Street",
+      "incident_city": "London",
+      "incident_date": "2025-05-11",
+      "incident_id": "INC-00002",
+      "incident_type": "collision",
+      "police_report_reference": "POLICE-000002",
+      "weather_condition": "clear",
+      "witness_count": 2
+    }
+  ],
+  "payments": [
+    {
+      "bank_account_reference": "BANK-SHARED-001",
+      "claim_id": "CLM-00001",
+      "payment_amount": 21000,
+      "payment_date": "2025-02-14",
+      "payment_id": "PAY-000001",
+      "payment_status": "paid",
+      "recipient_id": "RS-0001",
+      "recipient_type": "repair_shop"
+    },
+    {
+      "bank_account_reference": "BANK-SHARED-001",
+      "claim_id": "CLM-00002",
+      "payment_amount": 12000,
+      "payment_date": "2025-05-20",
+      "payment_id": "PAY-000002",
+      "payment_status": "paid",
+      "recipient_id": "RS-0001",
+      "recipient_type": "repair_shop"
+    }
+  ],
+  "policies": [
+    {
+      "coverage_amount": 75000,
+      "customer_id": "CUS-00001",
+      "deductible": 500,
+      "policy_end_date": "2026-01-01",
+      "policy_id": "POL-00001",
+      "policy_start_date": "2025-01-01",
+      "policy_status": "active",
+      "policy_type": "comprehensive",
+      "premium_amount": 1800
+    },
+    {
+      "coverage_amount": 50000,
+      "customer_id": "CUS-00002",
+      "deductible": 750,
+      "policy_end_date": "2026-01-20",
+      "policy_id": "POL-00002",
+      "policy_start_date": "2025-01-20",
+      "policy_status": "active",
+      "policy_type": "theft",
+      "premium_amount": 1200
+    }
+  ],
+  "repair_shops": [
+    {
+      "bank_account_reference": "BANK-SHARED-001",
+      "city": "London",
+      "name": "Premier Auto Repair 1",
+      "owner_name": "Noah Singh",
+      "postcode": "LDN 11AA",
+      "registration_date": "2020-06-01",
+      "repair_shop_id": "RS-0001"
+    },
+    {
+      "bank_account_reference": "BANK-RS-00002",
+      "city": "London",
+      "name": "Metro Auto Repair 2",
+      "owner_name": "Sophia Brown",
+      "postcode": "LDN 12AA",
+      "registration_date": "2019-04-18",
+      "repair_shop_id": "RS-0002"
+    }
+  ],
+  "vehicles": [
+    {
+      "customer_id": "CUS-00001",
+      "estimated_value": 42000,
+      "make": "BMW",
+      "manufacture_year": 2021,
+      "model": "X3",
+      "registration_region": "London",
+      "vehicle_id": "VEH-00001",
+      "vehicle_type": "suv"
+    },
+    {
+      "customer_id": "CUS-00002",
+      "estimated_value": 31000,
+      "make": "Audi",
+      "manufacture_year": 2020,
+      "model": "A4",
+      "registration_region": "London",
+      "vehicle_id": "VEH-00002",
+      "vehicle_type": "sedan"
+    }
+  ]
+}
