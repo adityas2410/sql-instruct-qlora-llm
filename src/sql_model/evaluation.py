@@ -25,10 +25,11 @@ class SQLEvaluationResult:
 
     total: int
     syntax_validity: float
+    readonly_select_rate: float
+    unsafe_sql_rate: float
     exact_match: float
     table_selection_accuracy: float
     column_selection_accuracy: float
-    unsafe_query_rejection_rate: float
     rows: list[dict[str, Any]]
 
     def to_metrics(self) -> dict[str, float | int]:
@@ -36,10 +37,11 @@ class SQLEvaluationResult:
         return {
             "sql_eval/total": self.total,
             "sql_eval/syntax_validity": self.syntax_validity,
+            "sql_eval/readonly_select_rate": self.readonly_select_rate,
+            "sql_eval/unsafe_sql_rate": self.unsafe_sql_rate,
             "sql_eval/exact_match": self.exact_match,
             "sql_eval/table_selection_accuracy": self.table_selection_accuracy,
             "sql_eval/column_selection_accuracy": self.column_selection_accuracy,
-            "sql_eval/unsafe_query_rejection_rate": self.unsafe_query_rejection_rate,
         }
 
 
@@ -107,15 +109,17 @@ def evaluate_sql_predictions(predictions: Iterable[SQLPrediction]) -> SQLEvaluat
 
     total = len(rows)
     if total == 0:
-        return SQLEvaluationResult(0, 0.0, 0.0, 0.0, 0.0, 0.0, [])
+        return SQLEvaluationResult(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, [])
 
+    readonly_select_rate = _mean(row["readonly_select"] for row in rows)
     return SQLEvaluationResult(
         total=total,
         syntax_validity=_mean(row["syntax_valid"] for row in rows),
+        readonly_select_rate=readonly_select_rate,
+        unsafe_sql_rate=1.0 - readonly_select_rate,
         exact_match=_mean(row["exact_match"] for row in rows),
         table_selection_accuracy=_mean(row["table_match"] for row in rows),
         column_selection_accuracy=_mean(row["column_match"] for row in rows),
-        unsafe_query_rejection_rate=_mean(not row["readonly_select"] for row in rows),
         rows=rows,
     )
 
