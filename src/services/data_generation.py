@@ -1,8 +1,8 @@
 """Synthetic insurance data generation for investigation workflows.
 
 The generator creates deterministic, linked relational records that exercise exact
-SQL retrieval and later semantic similarity workflows. Claim embeddings are left
-empty because vectors are produced by the custom embedding pipeline.
+SQL retrieval and semantic similarity workflows. Claim embeddings are left empty
+because vectors are produced by the custom embedding pipeline.
 """
 
 from __future__ import annotations
@@ -54,45 +54,10 @@ class SyntheticDataConfig:
 class SyntheticInsuranceDataGenerator:
     """Generate linked synthetic insurance records with investigative patterns."""
 
-    first_names = (
-        "Aarav",
-        "Maya",
-        "Noah",
-        "Sophia",
-        "Liam",
-        "Olivia",
-        "Ethan",
-        "Isla",
-        "Arjun",
-        "Amelia",
-        "Rohan",
-        "Freya",
-    )
-    last_names = (
-        "Shah",
-        "Patel",
-        "Mehta",
-        "Kapoor",
-        "Williams",
-        "Brown",
-        "Taylor",
-        "Walker",
-        "Khan",
-        "Singh",
-        "Wilson",
-        "Evans",
-    )
+    first_names = ("Aarav", "Maya", "Noah", "Sophia", "Liam", "Olivia", "Ethan", "Isla", "Arjun", "Amelia", "Rohan", "Freya")
+    last_names = ("Shah", "Patel", "Mehta", "Kapoor", "Williams", "Brown", "Taylor", "Walker", "Khan", "Singh", "Wilson", "Evans")
     cities = ("London", "Manchester", "Birmingham", "Leeds", "Bristol", "Glasgow")
-    occupations = (
-        "Accountant",
-        "Driver",
-        "Engineer",
-        "Nurse",
-        "Teacher",
-        "Contractor",
-        "Mechanic",
-        "Consultant",
-    )
+    occupations = ("Accountant", "Driver", "Engineer", "Nurse", "Teacher", "Contractor", "Mechanic", "Consultant")
     vehicle_makes = ("Ford", "Toyota", "BMW", "Nissan", "Audi", "Honda", "Tesla")
     vehicle_models = ("Focus", "Corolla", "X3", "Qashqai", "A4", "Civic", "Model 3")
     vehicle_types = ("sedan", "suv", "hatchback", "van", "motorcycle")
@@ -117,35 +82,24 @@ class SyntheticInsuranceDataGenerator:
         payments: list[dict[str, Any]] = []
 
         claim_index = 1
-        for _ in range(self.config.normal_claim_count):
-            self._append_claim_bundle(
-                claim_index=claim_index,
-                pattern="normal",
-                customers=customers,
-                policies=policies,
-                vehicles=vehicles,
-                repair_shops=repair_shops,
-                incidents=incidents,
-                claims=claims,
-                participants=participants,
-                payments=payments,
-            )
-            claim_index += 1
-
-        for _ in range(self.config.fraudulent_claim_count):
-            self._append_claim_bundle(
-                claim_index=claim_index,
-                pattern="historical_fraud",
-                customers=customers,
-                policies=policies,
-                vehicles=vehicles,
-                repair_shops=repair_shops,
-                incidents=incidents,
-                claims=claims,
-                participants=participants,
-                payments=payments,
-            )
-            claim_index += 1
+        for pattern, count in (
+            ("normal", self.config.normal_claim_count),
+            ("historical_fraud", self.config.fraudulent_claim_count),
+        ):
+            for _ in range(count):
+                self._append_claim_bundle(
+                    claim_index=claim_index,
+                    pattern=pattern,
+                    customers=customers,
+                    policies=policies,
+                    vehicles=vehicles,
+                    repair_shops=repair_shops,
+                    incidents=incidents,
+                    claims=claims,
+                    participants=participants,
+                    payments=payments,
+                )
+                claim_index += 1
 
         for group_index in range(1, self.config.coordinated_group_count + 1):
             group_context = self._build_coordinated_group_context(group_index, repair_shops)
@@ -180,13 +134,12 @@ class SyntheticInsuranceDataGenerator:
     def write(self, dataset: dict[str, list[dict[str, Any]]] | None = None) -> None:
         """Write generated records as JSON files under the configured output directory."""
         dataset = dataset or self.generate()
-        output_dir = self.config.output_dir
-        output_dir.mkdir(parents=True, exist_ok=True)
+        self.config.output_dir.mkdir(parents=True, exist_ok=True)
 
         for table_name in TABLE_WRITE_ORDER:
-            path = output_dir / f"{table_name}.json"
+            path = self.config.output_dir / f"{table_name}.json"
             path.write_text(
-                json.dumps(dataset[table_name], indent=2, sort_keys=True) + "\n",
+                json.dumps(dataset[table_name], default=str, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
 
@@ -195,36 +148,21 @@ class SyntheticInsuranceDataGenerator:
             "tables": {table_name: len(dataset[table_name]) for table_name in TABLE_WRITE_ORDER},
             "claim_embedding_policy": "claim embeddings are produced by the embedding pipeline",
         }
-        (output_dir / "manifest.json").write_text(
+        (self.config.output_dir / "manifest.json").write_text(
             json.dumps(manifest, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
 
     def _generate_customers(self) -> list[dict[str, Any]]:
         customers = []
-        shared_addresses = [
-            "14 Northgate Road",
-            "88 Market Street",
-            "5 Bridge Lane",
-        ]
-        shared_phones = ["+447700900101", "+447700900202", "+447700900303"]
-
+        shared_addresses = ("14 Northgate Road", "88 Market Street", "5 Bridge Lane")
+        shared_phones = ("+447700900101", "+447700900202", "+447700900303")
         for index in range(1, self.config.customer_count + 1):
             first_name = self.random.choice(self.first_names)
             last_name = self.random.choice(self.last_names)
             city = self.random.choice(self.cities)
-            use_shared_address = index % 17 == 0
-            use_shared_phone = index % 19 == 0
-            address = (
-                self.random.choice(shared_addresses)
-                if use_shared_address
-                else f"{self.random.randint(1, 220)} {self.random.choice(['Oak', 'King', 'Station', 'Mill'])} Road"
-            )
-            phone = (
-                self.random.choice(shared_phones)
-                if use_shared_phone
-                else f"+447700{900000 + index:06d}"
-            )
+            address = self.random.choice(shared_addresses) if index % 17 == 0 else f"{self.random.randint(1, 220)} {self.random.choice(['Oak', 'King', 'Station', 'Mill'])} Road"
+            phone = self.random.choice(shared_phones) if index % 19 == 0 else f"+447700{900000 + index:06d}"
             customers.append(
                 {
                     "customer_id": f"CUS-{index:05d}",
@@ -264,14 +202,12 @@ class SyntheticInsuranceDataGenerator:
     def _generate_vehicles(self, customers: list[dict[str, Any]]) -> list[dict[str, Any]]:
         vehicles = []
         for index, customer in enumerate(customers, start=1):
-            make = self.random.choice(self.vehicle_makes)
-            model = self.random.choice(self.vehicle_models)
             vehicles.append(
                 {
                     "vehicle_id": f"VEH-{index:05d}",
                     "customer_id": customer["customer_id"],
-                    "make": make,
-                    "model": model,
+                    "make": self.random.choice(self.vehicle_makes),
+                    "model": self.random.choice(self.vehicle_models),
                     "manufacture_year": self.random.randint(2012, 2025),
                     "vehicle_type": self.random.choice(self.vehicle_types),
                     "estimated_value": self.random.randint(6000, 70000),
@@ -282,14 +218,10 @@ class SyntheticInsuranceDataGenerator:
 
     def _generate_repair_shops(self) -> list[dict[str, Any]]:
         shops = []
-        shared_bank_accounts = ["BANK-SHARED-001", "BANK-SHARED-002", "BANK-SHARED-003"]
+        shared_bank_accounts = ("BANK-SHARED-001", "BANK-SHARED-002", "BANK-SHARED-003")
         for index in range(1, self.config.repair_shop_count + 1):
             city = self.random.choice(self.cities)
-            bank_account = (
-                self.random.choice(shared_bank_accounts)
-                if index % 9 == 0
-                else f"BANK-RS-{index:05d}"
-            )
+            bank_account = self.random.choice(shared_bank_accounts) if index % 9 == 0 else f"BANK-RS-{index:05d}"
             shops.append(
                 {
                     "repair_shop_id": f"RS-{index:04d}",
@@ -319,27 +251,19 @@ class SyntheticInsuranceDataGenerator:
         group_context: dict[str, Any] | None = None,
         force_historical_fraud: bool | None = None,
     ) -> None:
-        customer_position = self.random.randrange(len(customers))
-        customer = customers[customer_position]
-        policy = policies[customer_position]
-        vehicle = vehicles[customer_position]
+        position = self.random.randrange(len(customers))
+        customer = customers[position]
+        policy = policies[position]
+        vehicle = vehicles[position]
         shop = self._select_repair_shop(pattern, repair_shops, group_context)
-
         policy_start = date.fromisoformat(str(policy["policy_start_date"]))
         claim_date = self._claim_date_for_pattern(pattern, policy_start)
         incident_date = claim_date - timedelta(days=self.random.randint(0, 14))
         claim_id = f"CLM-{claim_index:05d}"
         incident_id = f"INC-{claim_index:05d}"
-        fraud_label = force_historical_fraud
-        if fraud_label is None:
-            fraud_label = pattern in {"historical_fraud", "coordinated_group"}
-
+        fraud_label = force_historical_fraud if force_historical_fraud is not None else pattern in {"historical_fraud", "coordinated_group"}
         incident_city = group_context.get("city") if group_context else self.random.choice(self.cities)
-        incident_type = (
-            group_context.get("incident_type")
-            if group_context
-            else self.random.choice(self.incident_types)
-        )
+        incident_type = group_context.get("incident_type") if group_context else self.random.choice(self.incident_types)
         claim_amount = self._claim_amount_for_pattern(pattern)
         repair_cost = max(500, int(claim_amount * self.random.uniform(0.45, 0.95)))
 
@@ -349,17 +273,12 @@ class SyntheticInsuranceDataGenerator:
                 "incident_type": incident_type,
                 "incident_date": incident_date,
                 "incident_city": incident_city,
-                "incident_address": group_context.get("incident_address")
-                if group_context
-                else f"{self.random.randint(1, 250)} {self.random.choice(['High', 'Canal', 'Park'])} Street",
+                "incident_address": group_context.get("incident_address") if group_context else f"{self.random.randint(1, 250)} {self.random.choice(['High', 'Canal', 'Park'])} Street",
                 "weather_condition": self.random.choice(self.weather_conditions),
-                "police_report_reference": f"POLICE-{claim_index:06d}"
-                if self.random.random() > 0.35
-                else None,
+                "police_report_reference": f"POLICE-{claim_index:06d}" if self.random.random() > 0.35 else None,
                 "witness_count": self.random.randint(0, 4),
             }
         )
-
         claims.append(
             {
                 "claim_id": claim_id,
@@ -370,9 +289,7 @@ class SyntheticInsuranceDataGenerator:
                 "claim_date": claim_date,
                 "claim_amount": claim_amount,
                 "repair_cost": repair_cost,
-                "damage_type": group_context.get("damage_type")
-                if group_context
-                else self.random.choice(self.damage_types),
+                "damage_type": group_context.get("damage_type") if group_context else self.random.choice(self.damage_types),
                 "injury_reported": self.random.random() < (0.25 if pattern == "normal" else 0.45),
                 "police_report_available": self.random.random() > (0.25 if pattern == "normal" else 0.55),
                 "claim_description": self._claim_description(pattern, incident_type, incident_city),
@@ -382,15 +299,10 @@ class SyntheticInsuranceDataGenerator:
                 "claim_embedding": None,
             }
         )
-
         self._append_participants(claim_id, customer, participants, group_context)
         self._append_payments(claim_id, shop, claim_amount, payments, group_context)
 
-    def _build_coordinated_group_context(
-        self,
-        group_index: int,
-        repair_shops: list[dict[str, Any]],
-    ) -> dict[str, Any]:
+    def _build_coordinated_group_context(self, group_index: int, repair_shops: list[dict[str, Any]]) -> dict[str, Any]:
         shop = repair_shops[group_index % len(repair_shops)]
         city = self.random.choice(self.cities)
         return {
@@ -405,15 +317,9 @@ class SyntheticInsuranceDataGenerator:
             "city": city,
         }
 
-    def _select_repair_shop(
-        self,
-        pattern: str,
-        repair_shops: list[dict[str, Any]],
-        group_context: dict[str, Any] | None,
-    ) -> dict[str, Any]:
+    def _select_repair_shop(self, pattern: str, repair_shops: list[dict[str, Any]], group_context: dict[str, Any] | None) -> dict[str, Any]:
         if group_context:
-            repair_shop_id = group_context["repair_shop_id"]
-            return next(shop for shop in repair_shops if shop["repair_shop_id"] == repair_shop_id)
+            return next(shop for shop in repair_shops if shop["repair_shop_id"] == group_context["repair_shop_id"])
         if pattern == "historical_fraud":
             suspicious_shops = repair_shops[:: max(1, len(repair_shops) // 5)]
             return self.random.choice(suspicious_shops)
@@ -432,13 +338,7 @@ class SyntheticInsuranceDataGenerator:
             return self.random.randint(15000, 55000)
         return self.random.randint(18000, 75000)
 
-    def _append_participants(
-        self,
-        claim_id: str,
-        customer: dict[str, Any],
-        participants: list[dict[str, Any]],
-        group_context: dict[str, Any] | None,
-    ) -> None:
+    def _append_participants(self, claim_id: str, customer: dict[str, Any], participants: list[dict[str, Any]], group_context: dict[str, Any] | None) -> None:
         participant_index = len(participants) + 1
         participants.append(
             {
@@ -460,25 +360,14 @@ class SyntheticInsuranceDataGenerator:
                     "claim_id": claim_id,
                     "participant_type": "third_party",
                     "full_name": f"{self.random.choice(self.first_names)} {self.random.choice(self.last_names)}",
-                    "phone_number": group_context.get("shared_phone_number")
-                    if group_context
-                    else f"+447702{participant_index:06d}",
+                    "phone_number": group_context.get("shared_phone_number") if group_context else f"+447702{participant_index:06d}",
                     "email": f"participant{participant_index}@example.com",
-                    "address": group_context.get("shared_address")
-                    if group_context
-                    else f"{self.random.randint(1, 300)} West Road",
+                    "address": group_context.get("shared_address") if group_context else f"{self.random.randint(1, 300)} West Road",
                     "relationship_to_claim": "other_driver",
                 }
             )
 
-    def _append_payments(
-        self,
-        claim_id: str,
-        shop: dict[str, Any],
-        claim_amount: int,
-        payments: list[dict[str, Any]],
-        group_context: dict[str, Any] | None,
-    ) -> None:
+    def _append_payments(self, claim_id: str, shop: dict[str, Any], claim_amount: int, payments: list[dict[str, Any]], group_context: dict[str, Any] | None) -> None:
         payment_index = len(payments) + 1
         payment_count = 2 if claim_amount > 30000 or group_context else 1
         remaining = claim_amount
@@ -491,9 +380,7 @@ class SyntheticInsuranceDataGenerator:
                     "claim_id": claim_id,
                     "recipient_type": "repair_shop" if item == 0 else "claimant",
                     "recipient_id": shop["repair_shop_id"] if item == 0 else None,
-                    "bank_account_reference": group_context.get("shared_bank_account")
-                    if group_context
-                    else shop["bank_account_reference"],
+                    "bank_account_reference": group_context.get("shared_bank_account") if group_context else shop["bank_account_reference"],
                     "payment_amount": amount,
                     "payment_date": self._random_date(date(2023, 1, 1), date(2025, 12, 31)),
                     "payment_status": self.random.choice(["paid", "paid", "pending", "review"]),
