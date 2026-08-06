@@ -56,23 +56,13 @@ flowchart TD
 
 ### Fine-Tuned Falcon SQL LLM
 
-The Falcon model is the single reasoning and generation model in the architecture. It is responsible for:
-
-- Interpreting investigator requests.
-- Generating read-only SQL against the approved insurance schema.
-- Selecting agent tools.
-- Producing follow-up SQL from retrieved semantic candidates.
-- Summarizing grounded evidence from database records.
+The Falcon model is the single reasoning and generation model in the architecture. It is responsible for interpreting investigator requests, generating read-only SQL, selecting agent tools, producing follow-up SQL from semantic candidates, and summarizing grounded evidence.
 
 The SQL model is fine-tuned with supervised instruction tuning using PEFT QLoRA, LoRA adapters, 4-bit quantization, gradient accumulation, and optional Weights & Biases tracking.
 
 ### Custom Database Embedding Model
 
-The embedding model is a separate custom PyTorch Skip-Gram with Negative Sampling model. It is trained from scratch on structured, column-aware claim tokens.
-
-It does not use OpenAI embeddings, Sentence Transformers, BERT, or external embedding APIs.
-
-The embedding data flow is:
+The embedding model is a custom PyTorch Skip-Gram with Negative Sampling model trained from scratch on structured, column-aware claim tokens. It does not use OpenAI embeddings, Sentence Transformers, BERT, or external embedding APIs.
 
 ```text
 Structured joined claim
@@ -89,30 +79,11 @@ Structured joined claim
 -> grounded investigation summary
 ```
 
-The joined claim representation combines deterministic relational features from:
+The joined claim representation combines deterministic relational features from claims, customers, policies, vehicles, repair shops, incidents, payment aggregates, and prior-claim engineered features.
 
-- Claim
-- Customer
-- Policy
-- Vehicle
-- Repair shop
-- Incident
-- Payment aggregates
-- Prior-claim engineered features
+Example engineered features include `previous_claim_count`, `previous_total_claim_amount`, `previous_fraud_count`, `customer_claim_frequency`, `policy_age_days`, `incident_to_claim_delay_days`, `shared_bank_account_count`, `shared_phone_count`, and `shared_address_count`.
 
-Example engineered features include:
-
-- `previous_claim_count`
-- `previous_total_claim_amount`
-- `previous_fraud_count`
-- `customer_claim_frequency`
-- `policy_age_days`
-- `incident_to_claim_delay_days`
-- `shared_bank_account_count`
-- `shared_phone_count`
-- `shared_address_count`
-
-These values are converted into column-aware tokens such as:
+Example tokens:
 
 ```text
 incident_type=vehicle_theft
@@ -149,14 +120,6 @@ Every value is prefixed by its feature name. Each claim row is treated as an uno
 
 ### Exact SQL Query
 
-Example request:
-
-```text
-Show vehicle-theft claims in London above GBP 20,000.
-```
-
-Flow:
-
 ```text
 User prompt
 -> FastAPI
@@ -172,14 +135,6 @@ The embedding model and pgvector are not used for exact relational queries.
 
 ### Semantic Similarity Search
 
-Example request:
-
-```text
-Find claims similar to CLM-1042.
-```
-
-Flow:
-
 ```text
 User prompt
 -> FastAPI
@@ -194,14 +149,6 @@ User prompt
 pgvector returns ranked candidate IDs. It does not return the full investigation context.
 
 ### Combined SQL And Semantic Query
-
-Example request:
-
-```text
-Find claims similar to CLM-1042, limited to London claims above GBP 15,000 during 2025.
-```
-
-Flow:
 
 ```text
 User prompt
@@ -260,7 +207,33 @@ PostgreSQL stores normalized investigation evidence across these tables:
 - `claim_participants` - drivers, witnesses, passengers, third parties, and other linked people or organizations.
 - `payments` - claim payments, recipients, bank-account references, amounts, dates, and statuses.
 
-The schema includes foreign keys from claims to policies, vehicles, incidents, and repair shops, plus cascading detail records for participants and payments. Indexes support common investigative lookups by date, amount, status, fraud outcome metadata, repair shop, bank account, contact information, and pgvector cosine similarity.
+The schema includes foreign keys from claims to policies, vehicles, incidents, and repair shops, plus cascading detail records for participants and payments. Indexes support investigative lookups by date, amount, status, fraud outcome metadata, repair shop, bank account, contact information, and pgvector cosine similarity.
+
+## Synthetic Data Workflow
+
+The data generator creates deterministic linked insurance records with realistic investigation patterns:
+
+- Normal claims and historically fraudulent claims.
+- Repeated repair shops and payment recipients.
+- Shared bank accounts, phone numbers, and addresses.
+- Claims filed shortly after policy creation.
+- High claim amounts and repeated high-value repairs.
+- Coordinated groups of claims.
+- Similar claims with mixed historical outcomes.
+
+Generated data is written as one JSON file per database table under `data/generated/`:
+
+```bash
+python scripts/generate_insurance_data.py --seed 2410 --customers 200 --normal-claims 500
+```
+
+The loader imports table files into PostgreSQL in foreign-key order:
+
+```bash
+python scripts/load_insurance_data.py --input-dir data/generated --replace
+```
+
+A small fixture at `data/sample/insurance_sample.json` demonstrates the linked JSON shape. Claim embeddings remain empty in generated and sample data; vectors are created by the custom embedding pipeline and stored in PostgreSQL after indexing.
 
 ## Data Generation Policy
 
@@ -282,16 +255,7 @@ PostgreSQL data uses a Docker named volume and is not stored in the repository.
 
 ### Falcon QLoRA SQL Model
 
-The SQL model path supports:
-
-- Configurable open-source 11B causal LLM identifier.
-- Hugging Face model and tokenizer loading.
-- 4-bit quantization configuration.
-- LoRA adapter setup through PEFT.
-- Supervised instruction tuning.
-- SQL instruction data preparation.
-- Adapter saving and loading.
-- SQL generation for the agent and API.
+The SQL model path supports configurable 11B model loading, 4-bit quantization, LoRA adapter setup, supervised instruction tuning, adapter save/load, and SQL generation for the agent and API.
 
 Training data follows this structure:
 
@@ -310,17 +274,7 @@ The model is trained for instruction tuning, not few-shot prompting.
 
 ### Skip-Gram Claim Embedding Model
 
-The embedding model path supports:
-
-- Structured claim feature extraction from joined relational records.
-- Numeric binning for claim amount, repair cost, income, vehicle value, policy age, customer age, claim delay, previous claim count, historical claim value, payment count, and shared identifiers.
-- Column-aware tokenization.
-- Skip-Gram positive-pair creation from tokens in the same claim row.
-- Negative sampling.
-- PyTorch training with Adam.
-- Token embedding export.
-- Claim-vector mean pooling.
-- Claim-vector indexing into PostgreSQL `pgvector`.
+The embedding model path supports structured feature extraction, numeric binning, column-aware tokenization, Skip-Gram positive-pair creation, negative sampling, PyTorch training with Adam, token embedding export, claim-vector mean pooling, and claim-vector indexing into PostgreSQL `pgvector`.
 
 Default training settings:
 
@@ -353,23 +307,7 @@ Training endpoints are protected and are not publicly exposed without authentica
 
 ## SQL Safety
 
-All generated or user-submitted SQL passes a read-only validator before execution.
-
-The validator blocks:
-
-- `INSERT`
-- `UPDATE`
-- `DELETE`
-- `DROP`
-- `ALTER`
-- `TRUNCATE`
-- `CREATE`
-- Multiple SQL statements
-- SQL comments intended to bypass validation
-- Access to unapproved system schemas
-- Unrestricted queries without sensible row limits where appropriate
-
-The validator uses SQL parsing in addition to keyword-level safeguards.
+All generated or user-submitted SQL passes a read-only validator before execution. The validator blocks write statements, DDL, multiple SQL statements, bypass comments, system schema access, and unrestricted queries without sensible row limits. It uses SQL parsing in addition to keyword-level safeguards.
 
 ## Implementation Modules
 
