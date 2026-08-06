@@ -262,6 +262,32 @@ PostgreSQL stores normalized investigation evidence across these tables:
 
 The schema includes foreign keys from claims to policies, vehicles, incidents, and repair shops, plus cascading detail records for participants and payments. Indexes support common investigative lookups by date, amount, status, fraud outcome metadata, repair shop, bank account, contact information, and pgvector cosine similarity.
 
+## Synthetic Data Workflow
+
+The data generator creates deterministic linked insurance records with realistic investigation patterns:
+
+- Normal claims and historically fraudulent claims.
+- Repeated repair shops and payment recipients.
+- Shared bank accounts, phone numbers, and addresses.
+- Claims filed shortly after policy creation.
+- High claim amounts and repeated high-value repairs.
+- Coordinated groups of claims.
+- Similar claims with mixed historical outcomes.
+
+Generated data is written as one JSON file per database table under `data/generated/`:
+
+```bash
+python scripts/generate_insurance_data.py --seed 2410 --customers 200 --normal-claims 500
+```
+
+The loader imports those table files into PostgreSQL in foreign-key order:
+
+```bash
+python scripts/load_insurance_data.py --input-dir data/generated --replace
+```
+
+A small fixture at `data/sample/insurance_sample.json` demonstrates the linked JSON shape. Claim embeddings remain empty in generated and sample data; vectors are created by the custom embedding pipeline and stored in PostgreSQL after indexing.
+
 ## Data Generation Policy
 
 The repository does not contain the full synthetic dataset, PostgreSQL database files, model checkpoints, adapter weights, claim vectors, W&B logs, or generated evaluation outputs.
@@ -298,7 +324,7 @@ Training data follows this structure:
 ```json
 {
   "instruction": "Show confirmed fraudulent claims above 15000 filed within 30 days of the policy start date.",
-  "schema": "customers(...), policies(...), claims(...)",
+  "schema": "customers(...), policies(...), claims(...) і",
   "output": "SELECT ...",
   "metadata": {
     "reasoning": "optional training-only metadata"
