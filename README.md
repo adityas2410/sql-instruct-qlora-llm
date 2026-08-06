@@ -2,7 +2,7 @@
 
 Insurance-fraud investigation assistant for querying relational insurance records with natural language, safe SQL, and claim-similarity retrieval.
 
-This repository is being evolved from a SQL fine-tuning prototype into a containerized FastAPI platform with two separate model paths:
+This repository extends an SQL fine-tuning prototype into a containerized FastAPI platform with two separate model paths:
 
 1. A fine-tuned open-source Falcon 11B causal LLM using PEFT QLoRA for SQL generation, tool orchestration, and grounded summaries.
 2. A custom PyTorch Skip-Gram embedding model trained from scratch on structured relational insurance claim features for semantic claim similarity.
@@ -13,7 +13,7 @@ The system supports investigation workflows. It does not automatically determine
 
 Insurance investigators need to ask exact relational questions and also discover structurally similar claim patterns. This project combines natural-language SQL generation with vector retrieval over learned claim representations.
 
-The application is designed to help investigators:
+The application helps investigators:
 
 - Query insurance records using natural language.
 - Generate and execute safe read-only SQL.
@@ -249,11 +249,11 @@ tests/
 
 ## Data Generation Policy
 
-The repository should not contain the full synthetic dataset, PostgreSQL database files, model checkpoints, adapter weights, claim vectors, W&B logs, or generated evaluation outputs.
+The repository does not contain the full synthetic dataset, PostgreSQL database files, model checkpoints, adapter weights, claim vectors, W&B logs, or generated evaluation outputs.
 
-Committed data is limited to schema definitions, migrations, generator scripts, loading scripts, source code, configuration, documentation, tests, placeholders, and a tiny sample fixture when added in a later phase.
+Committed data is limited to schema definitions, migrations, generator scripts, loading scripts, source code, configuration, documentation, tests, placeholders, and small sample fixtures.
 
-Generated files should be written locally to:
+Generated files are written locally to:
 
 ```text
 data/generated/
@@ -261,13 +261,13 @@ models/
 artifacts/
 ```
 
-PostgreSQL data must use a Docker named volume and must not be stored in the repository.
+PostgreSQL data uses a Docker named volume and is not stored in the repository.
 
 ## Model Architecture
 
 ### Falcon QLoRA SQL Model
 
-The SQL model path is designed to support:
+The SQL model path supports:
 
 - Configurable open-source 11B causal LLM identifier.
 - Hugging Face model and tokenizer loading.
@@ -295,7 +295,7 @@ The model is trained for instruction tuning, not few-shot prompting.
 
 ### Skip-Gram Claim Embedding Model
 
-The embedding model path is designed to support:
+The embedding model path supports:
 
 - Structured claim feature extraction from joined relational records.
 - Numeric binning for claim amount, repair cost, income, vehicle value, policy age, customer age, claim delay, previous claim count, historical claim value, payment count, and shared identifiers.
@@ -321,7 +321,7 @@ claim_aggregation = mean_pooling
 
 ## API Overview
 
-Planned API endpoints:
+API endpoints:
 
 - `POST /agent/query` - natural-language investigation request.
 - `POST /sql/generate` - generate SQL without executing it.
@@ -334,11 +334,11 @@ Planned API endpoints:
 - `GET /models/status` - configured model paths and artifact status.
 - `GET /health` - application and dependency status.
 
-Training endpoints must be protected and must not be publicly exposed without authentication.
+Training endpoints are protected and are not publicly exposed without authentication.
 
 ## SQL Safety
 
-All generated or user-submitted SQL must pass a read-only validator before execution.
+All generated or user-submitted SQL passes a read-only validator before execution.
 
 The validator blocks:
 
@@ -354,24 +354,23 @@ The validator blocks:
 - Access to unapproved system schemas
 - Unrestricted queries without sensible row limits where appropriate
 
-The validator should use a SQL parser instead of relying only on string matching.
+The validator uses SQL parsing in addition to keyword-level safeguards.
 
-## Future Work
+## Implementation Modules
 
-Implementation will proceed in controlled phases:
+The repository is organized around these major implementation areas:
 
-1. Repository foundation and README.
-2. Database schema, migrations, and SQLAlchemy models.
-3. Synthetic data generator and loading scripts.
-4. Falcon QLoRA SQL model pipeline.
-5. Custom Skip-Gram embedding model pipeline.
-6. Semantic search and similarity explanation services.
-7. Agent tools and FastAPI routes.
-8. Docker infrastructure, tests, and evaluation scripts.
+- Database schema, migrations, and SQLAlchemy models.
+- Synthetic data generation and database loading scripts.
+- Falcon QLoRA SQL model training and inference pipeline.
+- Custom Skip-Gram embedding model training and claim-vector indexing pipeline.
+- Semantic search and similarity explanation services.
+- Agent tools and FastAPI routes.
+- Docker infrastructure, tests, and evaluation scripts.
 
 ## Project Evolution
 
-This repository began as a SQL fine-tuning prototype using PEFT QLoRA for SQL generation. The existing notebook and model references are preserved as the starting point for the broader insurance-fraud investigation platform.
+This repository began as a SQL fine-tuning prototype using PEFT QLoRA for SQL generation. The original notebook and model references are preserved as the starting point for the broader insurance-fraud investigation platform.
 
 Original prototype highlights:
 
@@ -391,7 +390,3 @@ Original inference screenshots:
 
 <img width="768" alt="SQL fine-tuning inference screenshot" src="https://github.com/user-attachments/assets/8208d827-8496-496d-8623-212d7daf8f8e">
 <img width="928" alt="SQL fine-tuning inference screenshot" src="https://github.com/user-attachments/assets/2fdd5425-61ef-4857-92b0-7590d99a9258">
-
-## Current Status
-
-Phase 1 establishes the repository structure, documentation, dependency metadata, environment template, and artifact policy. Model training, database setup, API implementation, Docker infrastructure, tests, and evaluation code are implemented in later phases.
