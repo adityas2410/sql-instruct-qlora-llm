@@ -1,0 +1,101 @@
+{
+  "sql_generation": {
+    "parse_validity": 0.964,
+    "readonly_safety": 1.0,
+    "exact_match": 0.712,
+    "table_match": 0.884,
+    "column_match": 0.847,
+    "execution_match": 0.791
+  },
+  "semantic_retrieval": {
+    "recall_at_1": 0.512,
+    "recall_at_3": 0.741,
+    "recall_at_5": 0.823,
+    "recall_at_10": 0.912,
+    "precision_at_1": 0.512,
+    "precision_at_3": 0.391,
+    "precision_at_5": 0.284,
+    "precision_at_10": 0.173,
+    "mrr": 0.684,
+    "explanation_coverage": 0.936,
+    "fraud_reason_leak_rate": 0.0
+  },
+  "agent": {
+    "route_accuracy": 0.887,
+    "tool_correctness": 0.861,
+    "grounded_answer_rate": 0.935,
+    "unsupported_conclusion_rejection_rate": 0.972,
+    "evidence_citation_coverage": 0.908
+  },
+  "training_curves": {
+    "falcon_eval_loss": [1.92, 1.51, 1.27, 1.14, 1.06, 1.01],
+    "skipgram_embedding_loss": [2.47, 2.02, 1.74, 1.58, 1.49, 1.43]
+  },
+  "semantic_cases": [
+    {
+      "query_claim_id": "CLM-0001",
+      "relevant_claim_ids": ["CLM-0024", "CLM-0061", "CLM-0110"],
+      "retrieved_claim_ids": ["CLM-0024", "CLM-0188", "CLM-0061", "CLM-0215", "CLM-0110"],
+      "explanation_tokens": ["incident_city=london", "vehicle_type=suv", "claim_amount_bin=25000_50000"],
+      "explanation_entities": ["repair_shop_id=rs_018", "payment_bank_account=acct_4412"]
+    },
+    {
+      "query_claim_id": "CLM-0042",
+      "relevant_claim_ids": ["CLM-0098", "CLM-0104"],
+      "retrieved_claim_ids": ["CLM-0098", "CLM-0131", "CLM-0104", "CLM-0175", "CLM-0202"],
+      "explanation_tokens": ["incident_type=collision", "policy_age_days_bin=0_30_days"],
+      "explanation_entities": ["shared_phone=phone_2231"]
+    },
+    {
+      "query_claim_id": "CLM-0077",
+      "relevant_claim_ids": ["CLM-0122", "CLM-0145", "CLM-0166"],
+      "retrieved_claim_ids": ["CLM-0145", "CLM-0122", "CLM-0190", "CLM-0166", "CLM-0230"],
+      "explanation_tokens": ["repair_cost_bin=10000_25000", "previous_claim_count_bin=2_3"],
+      "explanation_entities": ["repair_shop_id=rs_004"]
+    }
+  ],
+  "agent_cases": [
+    {
+      "prompt_id": "AGT-001",
+      "prompt_type": "exact_sql",
+      "expected_route": "sql",
+      "actual_route": "sql",
+      "expected_tools": ["generate_sql", "execute_sql"],
+      "actual_tools": ["generate_sql", "execute_sql"],
+      "grounded_answer": true,
+      "rejected_unsupported_conclusion": true,
+      "cited_claim_ids": ["CLM-0009", "CLM-0031"],
+      "evidence_claim_ids": ["CLM-0009", "CLM-0031"],
+      "cited_entities": ["claims", "policies"],
+      "evidence_entities": ["claims", "policies"]
+    },
+    {
+      "prompt_id": "AGT-002",
+      "prompt_type": "semantic",
+      "expected_route": "semantic",
+      "actual_route": "semantic",
+      "expected_tools": ["find_similar_claims", "get_claim_evidence"],
+      "actual_tools": ["find_similar_claims", "get_claim_evidence"],
+      "grounded_answer": true,
+      "rejected_unsupported_conclusion": true,
+      "cited_claim_ids": ["CLM-0024", "CLM-0061"],
+      "evidence_claim_ids": ["CLM-0024", "CLM-0061", "CLM-0110"],
+      "cited_entities": ["repair_shop_id=rs_018", "payment_bank_account=acct_4412"],
+      "evidence_entities": ["repair_shop_id=rs_018", "payment_bank_account=acct_4412"]
+    },
+    {
+      "prompt_id": "AGT-003",
+      "prompt_type": "combined",
+      "expected_route": "combined",
+      "actual_route": "combined",
+      "expected_tools": ["find_similar_claims", "execute_sql", "get_claim_evidence"],
+      "actual_tools": ["find_similar_claims", "execute_sql", "get_claim_evidence"],
+      "grounded_answer": true,
+      "rejected_unsupported_conclusion": true,
+      "cited_claim_ids": ["CLM-0145", "CLM-0122", "CLM-0166"],
+      "evidence_claim_ids": ["CLM-0145", "CLM-0122", "CLM-0166"],
+      "cited_entities": ["repair_shop_id=rs_004"],
+      "evidence_entities": ["repair_shop_id=rs_004", "previous_claim_count_bin=2_3"]
+    }
+  ]
+}
