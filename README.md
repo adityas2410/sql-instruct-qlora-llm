@@ -255,7 +255,7 @@ PostgreSQL data uses a Docker named volume and is not stored in the repository.
 
 ### Falcon QLoRA SQL Model
 
-The SQL model path supports configurable 11B model loading, 4-bit quantization, LoRA adapter setup, supervised instruction tuning, adapter save/load, and SQL generation for the agent and API.
+The SQL model path is pinned to `tiiuae/falcon-11B` and supports 4-bit quantization, LoRA adapter setup, supervised instruction tuning, adapter save/load, SQL generation, and W&B-backed training/evaluation logging.
 
 Training data follows this structure:
 
@@ -265,9 +265,27 @@ Training data follows this structure:
   "schema": "customers(...), policies(...), claims(...)",
   "output": "SELECT ...",
   "metadata": {
-    "reasoning": "optional training-only metadata"
+    "query_type": "exact_sql",
+    "tables": ["customers", "policies", "claims"],
+    "safety": "read_only"
   }
 }
+```
+
+Falcon SQL pipeline commands:
+
+```bash
+python scripts/prepare_sql_training_data.py
+python scripts/train_sql_model.py
+python scripts/generate_sql.py "Show vehicle-theft claims in London above 20000."
+python scripts/evaluate_sql_model.py --eval-jsonl data/generated/sql_instruction_eval.jsonl
+```
+
+Weights & Biases logging is controlled by environment configuration:
+
+```bash
+SQL_MODEL_USE_WANDB=true
+WANDB_PROJECT=insurance-sql-agent
 ```
 
 The model is trained for instruction tuning, not few-shot prompting.
