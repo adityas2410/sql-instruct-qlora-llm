@@ -81,23 +81,23 @@ Structured joined claim
 
 The joined claim representation combines deterministic relational features from claims, customers, policies, vehicles, repair shops, incidents, payment aggregates, and prior-claim engineered features.
 
-Example engineered features include `previous_claim_count`, `previous_total_claim_amount`, `previous_fraud_count`, `customer_claim_frequency`, `policy_age_days`, `incident_to_claim_delay_days`, `shared_bank_account_count`, `shared_phone_count`, and `shared_address_count`.
+Example engineered features include `previous_claim_count`, `previous_total_claim_amount`, `customer_claim_frequency`, `policy_age_days`, `incident_to_claim_delay_days`, `shared_bank_account_count`, `shared_phone_count`, and `shared_address_count`.
 
 Example tokens:
 
 ```text
 incident_type=vehicle_theft
 incident_city=london
-claim_amount_bin=20000_25000
-policy_age_bin=0_30_days
+claim_amount_bin=25000_50000
+policy_age_days_bin=0_30_days
 vehicle_type=suv
-repair_shop_id=RS_018
+repair_shop_id=rs_018
 police_report_available=true
-previous_claim_count_bin=3_5
+previous_claim_count_bin=2_3
 shared_bank_account_count_bin=2_3
 ```
 
-Every value is prefixed by its feature name. Each claim row is treated as an unordered bag of tokens, where every token may act as context for every other token in that row.
+Every value is prefixed by its feature name. Each claim row is treated as an unordered bag of tokens, where every token may act as context for every other token in that row. Historical fraud labels and investigation outcomes are excluded from embedding-training tokens.
 
 ## Technology Stack
 
@@ -239,7 +239,7 @@ A small fixture at `data/sample/insurance_sample.json` demonstrates the linked J
 
 The repository does not contain the full synthetic dataset, PostgreSQL database files, model checkpoints, adapter weights, claim vectors, W&B logs, or generated evaluation outputs.
 
-Committed data is limited to schema definitions, migrations, generator scripts, loading scripts, source code, configuration, documentation, tests, placeholders, and small sample fixtures.
+Committed data is limited to schema definitions, migrations, generator scripts, loading scripts, source code, configuration, documentation, tests, and small sample fixtures.
 
 Generated files are written locally to:
 
@@ -305,6 +305,25 @@ minimum_token_frequency = 1
 similarity_metric = cosine
 claim_aggregation = mean_pooling
 ```
+
+Embedding pipeline commands:
+
+```bash
+python scripts/train_database_embeddings.py
+python scripts/index_claim_embeddings.py --vectors artifacts/claim_vectors/claim_vectors.json
+```
+
+The training script loads complete `ClaimEvidence` records from PostgreSQL, builds joined claim features, tokenizes them as `feature=value` labels, trains token embeddings with Skip-Gram Negative Sampling, mean-pools known token vectors into one 128-dimensional vector per claim, and writes local artifacts:
+
+```text
+artifacts/embedding_model/token_vocabulary.json
+artifacts/embedding_model/preprocessing_metadata.json
+artifacts/embedding_model/skipgram_config.json
+artifacts/embedding_model/token_embeddings.pt
+artifacts/claim_vectors/claim_vectors.json
+```
+
+The indexing script validates vector length and updates `claims.claim_embedding` for matching claim IDs.
 
 ## API Overview
 
