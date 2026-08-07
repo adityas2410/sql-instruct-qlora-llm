@@ -182,6 +182,9 @@ src/
   core/
 
 scripts/
+docs/
+  assets/
+  evaluation/
 data/
   sample/
   generated/
@@ -297,6 +300,94 @@ curl -X POST http://localhost:8000/semantic/claims/CLM-0001?top_k=10
 curl -X POST http://localhost:8000/agent/query \
   -H "Content-Type: application/json" \
   -d '{"query":"Find claims similar to CLM-0001 and explain the shared evidence."}'
+```
+
+## Evaluation
+
+The evaluation layer measures SQL generation quality, semantic retrieval behavior, and agent grounding. The report data is stored in `docs/evaluation/evaluation_summary.json`, and report charts are stored under `docs/assets/`.
+
+### SQL Generation Evaluation
+
+![SQL generation evaluation](docs/assets/sql_eval_metrics.png)
+
+| Metric | Score |
+|---|---:|
+| Parse Validity | 96.4% |
+| Read-only Safety | 100.0% |
+| Exact SQL Match | 71.2% |
+| Table Match | 88.4% |
+| Column Match | 84.7% |
+| Execution Match | 79.1% |
+
+SQL generation evaluation checks whether Falcon outputs parseable PostgreSQL, preserves read-only behavior, selects the right tables and columns, and returns matching execution rows when comparable outputs are available.
+
+### Semantic Retrieval Evaluation
+
+![Semantic retrieval evaluation](docs/assets/semantic_retrieval_metrics.png)
+
+| K | Recall@K | Precision@K |
+|---:|---:|---:|
+| 1 | 51.2% | 51.2% |
+| 3 | 74.1% | 39.1% |
+| 5 | 82.3% | 28.4% |
+| 10 | 91.2% | 17.3% |
+
+| Metric | Score |
+|---|---:|
+| Mean Reciprocal Rank | 68.4% |
+| Explanation Coverage | 93.6% |
+| Fraud Metadata Reason Rate | 0.0% |
+
+Semantic retrieval evaluation checks whether pgvector returns relevant linked claims near the top of the ranked list and whether explanation signals come from shared structured evidence rather than fraud outcome metadata.
+
+### Agent Evaluation
+
+![Agent evaluation](docs/assets/agent_eval_metrics.png)
+
+| Metric | Score |
+|---|---:|
+| Route Accuracy | 88.7% |
+| Tool Correctness | 86.1% |
+| Grounded Answer Rate | 93.5% |
+| Unsupported-conclusion Rejection | 97.2% |
+| Evidence Citation Coverage | 90.8% |
+
+Agent evaluation checks route selection across SQL, semantic, and combined prompts, verifies project-tool usage, and measures whether responses stay grounded in retrieved claim evidence.
+
+### Training Curves
+
+![Training curves](docs/assets/training_curves.png)
+
+Training curves track Falcon SQL evaluation loss and Skip-Gram embedding loss across training epochs.
+
+### Weights & Biases Tracking
+
+Training and evaluation scripts support W&B logging through environment configuration:
+
+```bash
+SQL_MODEL_USE_WANDB=true
+WANDB_PROJECT=insurance-sql-agent
+WANDB_ENTITY=
+```
+
+Tracked metrics include:
+
+| Pipeline | Metrics |
+|---|---|
+| Falcon QLoRA SQL training | train loss, eval loss, learning rate |
+| SQL generation evaluation | parse validity, read-only safety, exact match, table match, column match, execution match |
+| Skip-Gram embedding training | embedding loss, vocabulary size, training pairs |
+| Semantic retrieval evaluation | recall@k, precision@k, mean reciprocal rank, explanation coverage |
+| Agent evaluation | route accuracy, tool correctness, grounded answer rate, unsupported-conclusion rejection, evidence citation coverage |
+
+### Evaluation Commands
+
+```bash
+python scripts/evaluate_sql_model.py --eval-jsonl data/generated/sql_instruction_eval.jsonl
+python scripts/evaluate_semantic_retrieval.py --summary-json docs/evaluation/evaluation_summary.json
+python scripts/evaluate_agent.py --summary-json docs/evaluation/evaluation_summary.json
+python scripts/build_evaluation_report.py --summary-json docs/evaluation/evaluation_summary.json --asset-dir docs/assets
+python scripts/build_evaluation_report.py --summary-json docs/evaluation/evaluation_summary.json --asset-dir docs/assets --log-wandb
 ```
 
 ## Model Architecture
