@@ -31,7 +31,7 @@ Historical fraud labels are metadata and may be used for SQL filtering and offli
 ```mermaid
 flowchart TD
     user["Investigator"] --> api["FastAPI API"]
-    api --> agent["OpenAI Agents SDK"]
+    api --> agent["Hugging Face smolagents"]
     agent --> falcon["Fine-tuned Falcon 11B QLoRA"]
     falcon --> sql_tool["SQL Tool"]
     falcon --> semantic_tool["Semantic Search Tool"]
@@ -106,7 +106,7 @@ Every value is prefixed by its feature name. Each claim row is treated as an uno
 - PostgreSQL
 - pgvector
 - SQLAlchemy
-- OpenAI Agents SDK
+- Hugging Face smolagents
 - Hugging Face Transformers
 - PEFT
 - QLoRA
@@ -123,7 +123,7 @@ Every value is prefixed by its feature name. Each claim row is treated as an uno
 ```text
 User prompt
 -> FastAPI
--> OpenAI Agents SDK agent
+-> Hugging Face smolagents agent
 -> fine-tuned Falcon generates SQL
 -> SQL validator checks read-only safety
 -> PostgreSQL executes approved SQL
@@ -255,7 +255,7 @@ PostgreSQL data uses a Docker named volume and is not stored in the repository.
 
 ### Falcon QLoRA SQL Model
 
-The SQL model path is pinned to `tiiuae/falcon-11B` and supports 4-bit quantization, LoRA adapter setup, supervised instruction tuning, adapter save/load, SQL generation, and W&B-backed training/evaluation logging.
+The SQL model path is pinned to `tiiuae/falcon-11B` and supports 4-bit quantization, LoRA adapter setup, supervised instruction tuning, adapter save/load, SQL generation, W&B-backed training/evaluation logging, and Falcon-backed agent reasoning through Hugging Face smolagents.
 
 Training data follows this structure:
 
@@ -337,26 +337,31 @@ python scripts/find_similar_claims.py CLM-0001 --top-k 10
 
 The service returns deterministic explanation signals such as shared structured tokens, repair shops, payment bank accounts, phone numbers, addresses, incident type/city, and vehicle type. Historical fraud labels and investigation outcomes may be returned as metadata after retrieval, but they are not used as similarity reasons.
 
+### FastAPI Agent Application
+
+FastAPI exposes direct SQL, semantic retrieval, and agentic investigation routes. The agent path uses Hugging Face `CodeAgent` with project-defined tools only, `add_base_tools=false`, and fine-tuned Falcon as the reasoning model.
+
+Application command:
+
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
+
+Agent tools include SQL generation, read-only SQL execution, semantic claim search, and claim evidence retrieval.
+
 ## API Overview
 
 API endpoints:
 
-- `POST /agent/query` - natural-language investigation request.
+- `GET /health` - application and agent-framework metadata.
+- `POST /agent/query` - natural-language investigation request through the Falcon-backed smolagents agent.
 - `POST /sql/generate` - generate SQL without executing it.
 - `POST /sql/execute` - validate and execute approved read-only SQL.
-- `POST /semantic/claims/{claim_id}` - return similar claims.
-- `POST /semantic/pattern` - search using structured claim fields.
-- `POST /models/sql/train` - protected SQL-model training job definition.
-- `POST /models/embedding/train` - protected embedding-training job definition.
-- `POST /models/embedding/index` - claim-vector indexing job definition.
-- `GET /models/status` - configured model paths and artifact status.
-- `GET /health` - application and dependency status.
-
-Training endpoints are protected and are not publicly exposed without authentication.
+- `POST /semantic/claims/{claim_id}` - return similar claims with deterministic evidence overlap signals.
 
 ## SQL Safety
 
-All generated or user-submitted SQL passes a read-only validator before execution. The validator blocks write statements, DDL, multiple SQL statements, bypass comments, system schema access, and unrestricted queries without sensible row limits. It uses SQL parsing in addition to keyword-level safeguards.
+All generated or user-submitted SQL passes a read-only validator before execution. The validator blocks write statements, DDL, multiple SQL statements, bypass comments, system schema access, unapproved tables, and unrestricted queries without sensible row limits. It uses SQL parsing in addition to keyword-level safeguards.
 
 ## Implementation Modules
 
@@ -367,7 +372,7 @@ The repository is organized around these major implementation areas:
 - Falcon QLoRA SQL model training and inference pipeline.
 - Custom Skip-Gram embedding model training and claim-vector indexing pipeline.
 - Semantic search and similarity explanation services.
-- Agent tools and FastAPI routes.
+- Hugging Face smolagents tools and FastAPI routes.
 - Docker infrastructure, tests, and evaluation scripts.
 
 ## Project Evolution
