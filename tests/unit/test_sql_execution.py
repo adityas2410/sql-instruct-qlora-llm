@@ -15,7 +15,7 @@ def test_readonly_select_is_allowed() -> None:
     assert statement is not None
 
 
-def test_write_ddl_and_multi_statement_sql_are_rejected() -> None:
+def test_write_ddl_multi_statement_and_comments_are_rejected() -> None:
     """Unsafe SQL forms are blocked before execution."""
     with pytest.raises(SQLSafetyError):
         validate_readonly_select("DELETE FROM claims")
@@ -23,6 +23,8 @@ def test_write_ddl_and_multi_statement_sql_are_rejected() -> None:
         validate_readonly_select("DROP TABLE claims")
     with pytest.raises(SQLSafetyError):
         validate_readonly_select("SELECT claim_id FROM claims; SELECT customer_id FROM customers")
+    with pytest.raises(SQLSafetyError):
+        validate_readonly_select("SELECT claim_id FROM claims -- bypass")
 
 
 def test_unapproved_tables_and_schemas_are_rejected() -> None:
