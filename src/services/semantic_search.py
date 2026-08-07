@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -52,8 +52,8 @@ class SimilarClaim:
     claim_id: str
     similarity_score: float
     evidence: ClaimEvidence | None = None
-    shared_tokens: list[str] | None = None
-    shared_entities: list[str] | None = None
+    shared_tokens: list[str] = field(default_factory=list)
+    shared_entities: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
