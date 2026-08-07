@@ -15,12 +15,14 @@ from services.semantic_search import (
     ClaimEmbeddingMissingError,
     ClaimNotFoundError,
     InvalidClaimVectorError,
+    NoIndexedClaimsError,
     SimilarClaim,
     attach_evidence_and_explanations,
     build_vector_search_sql,
     explain_similarity,
     find_similar_claims,
     resolve_top_k,
+    search_similar_to_vector,
     validate_query_vector,
     vector_to_pgvector_literal,
 )
@@ -161,6 +163,21 @@ def test_top_k_defaults_and_max_clamp() -> None:
     assert resolve_top_k(100, settings=settings) == 20
     with pytest.raises(ValueError):
         resolve_top_k(0, settings=settings)
+
+
+def test_empty_pgvector_results_raise_domain_error() -> None:
+    """An empty indexed-candidate result is surfaced as a semantic-search error."""
+
+    class EmptyResult:
+        def all(self) -> list[object]:
+            return []
+
+    class EmptySession:
+        def execute(self, statement, params):
+            return EmptyResult()
+
+    with pytest.raises(NoIndexedClaimsError):
+        search_similar_to_vector(EmptySession(), [0.0] * 128, top_k=5)
 
 
 def test_missing_source_claim_raises_domain_error(monkeypatch) -> None:
