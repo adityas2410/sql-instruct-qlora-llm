@@ -19,6 +19,7 @@ from sqlglot import exp
 from database.schema import APPROVED_SCHEMA, APPROVED_TABLE_NAMES
 
 LIMIT_PATTERN = re.compile(r"\blimit\s+(\d+)\b", flags=re.IGNORECASE)
+COMMENT_PATTERN = re.compile(r"(--|/\*|\*/)")
 
 
 class SQLExecutionSettings(BaseSettings):
@@ -49,6 +50,9 @@ class SQLExecutionResult:
 
 def validate_readonly_select(sql: str) -> exp.Select:
     """Parse and validate a single approved read-only SELECT statement."""
+    if COMMENT_PATTERN.search(sql):
+        raise SQLSafetyError("SQL comments are not allowed in executable statements")
+
     try:
         statements = sqlglot.parse(sql, read="postgres")
     except sqlglot.errors.ParseError as exc:
