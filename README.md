@@ -325,6 +325,18 @@ artifacts/claim_vectors/claim_vectors.json
 
 The indexing script validates vector length and updates `claims.claim_embedding` for matching claim IDs.
 
+### Semantic Retrieval Service
+
+The semantic retrieval service reads indexed claim vectors, queries pgvector for nearest neighbors, then retrieves complete relational evidence through SQLAlchemy. pgvector returns ranked candidate IDs and similarity scores only; PostgreSQL joins and repository methods retrieve the investigation evidence.
+
+Backend semantic retrieval command:
+
+```bash
+python scripts/find_similar_claims.py CLM-0001 --top-k 10
+```
+
+The service returns deterministic explanation signals such as shared structured tokens, repair shops, payment bank accounts, phone numbers, addresses, incident type/city, and vehicle type. Historical fraud labels and investigation outcomes may be returned as metadata after retrieval, but they are not used as similarity reasons.
+
 ## API Overview
 
 API endpoints:
