@@ -169,10 +169,9 @@ Similarity ranking and exact business filtering remain separate responsibilities
 src/
   api/
     routes/
-    dependencies/
-    middleware/
+    dependencies.py
+    main.py
   agents/
-  tools/
   database/
     migrations/
   sql_model/
@@ -192,6 +191,8 @@ tests/
   unit/
   integration/
   evaluation/
+Dockerfile
+docker-compose.yml
 ```
 
 ## Relational Schema
@@ -250,6 +251,53 @@ artifacts/
 ```
 
 PostgreSQL data uses a Docker named volume and is not stored in the repository.
+
+## Runtime Infrastructure
+
+Docker Compose runs the application as a FastAPI container connected to PostgreSQL with pgvector enabled. PostgreSQL initializes from the existing schema migration mounted into `/docker-entrypoint-initdb.d/`, including `CREATE EXTENSION IF NOT EXISTS vector` and the `claims.claim_embedding VECTOR(128)` column.
+
+Runtime setup:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+The API is exposed on port `8000`, and PostgreSQL is exposed on port `5432` by default. Runtime data is stored in the `postgres_data` Docker volume, while generated files, model adapters, and local artifacts are mounted from the repository folders:
+
+```text
+data/
+models/
+artifacts/
+```
+
+Containerized data and model pipeline commands:
+
+```bash
+docker compose run --rm api python scripts/generate_insurance_data.py --seed 2410 --customers 200 --normal-claims 500
+docker compose run --rm api python scripts/load_insurance_data.py --input-dir data/generated --replace
+docker compose run --rm api python scripts/train_database_embeddings.py
+docker compose run --rm api python scripts/index_claim_embeddings.py --vectors artifacts/claim_vectors/claim_vectors.json
+docker compose run --rm api python scripts/prepare_sql_training_data.py
+docker compose run --rm api python scripts/train_sql_model.py
+docker compose run --rm api python scripts/evaluate_sql_model.py --eval-jsonl data/generated/sql_instruction_eval.jsonl
+```
+
+FastAPI examples:
+
+```bash
+curl http://localhost:8000/health
+
+curl -X POST http://localhost:8000/sql/generate \
+  -H "Content-Type: application/json" \
+  -d '{"instruction":"Show vehicle-theft claims in London above 20000."}'
+
+curl -X POST http://localhost:8000/semantic/claims/CLM-0001?top_k=10
+
+curl -X POST http://localhost:8000/agent/query \
+  -H "Content-Type: application/json" \
+  -d '{"query":"Find claims similar to CLM-0001 and explain the shared evidence."}'
+```
 
 ## Model Architecture
 
